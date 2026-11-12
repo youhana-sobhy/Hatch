@@ -1,0 +1,10 @@
+apiVersion: v2
+name: hatch
+description: Hatch zero-touch device onboarding (orchestrator, ZTP edge service and UI)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords: [network-automation, ztp, onboarding, compliance]
+home: https://github.com/youhana-sobhy/Hatch
+maintainers:
+  - name: Youhana Sobhy

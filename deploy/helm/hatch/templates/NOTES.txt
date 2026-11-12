@@ -1,0 +1,11 @@
+Hatch {{ .Chart.AppVersion }} is installed as "{{ .Release.Name }}".
+
+The orchestrator reads these secrets from namespace {{ .Release.Namespace }}:
+  {{ .Values.orchestrator.database.existingSecret }} ({{ .Values.orchestrator.database.key }}): postgresql+psycopg://user:pass@host:5432/hatch
+  {{ .Values.orchestrator.secretKey.existingSecret }} ({{ .Values.orchestrator.secretKey.key }}): a Fernet key
+  {{ .Values.orchestrator.apiTokens.existingSecret }} ({{ .Values.orchestrator.apiTokens.key }}): JSON list of API tokens
+  {{ .Values.ztp.tokenSecret }} (token): the token of the "service" role entry
+
+{{- if .Values.ztp.enabled }}
+Point DHCP options (POAP, Junos ZTP, ESXi PXE) at the {{ include "hatch.fullname" . }}-ztp service.
+{{- end }}

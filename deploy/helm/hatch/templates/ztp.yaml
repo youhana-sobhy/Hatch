@@ -1,0 +1,59 @@
+{{- if .Values.ztp.enabled }}
+{{- $name := "ztp" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hatch.fullname" . }}-{{ $name }}
+  labels:
+    {{- include "hatch.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ $name }}
+spec:
+  replicas: {{ .Values.ztp.replicas }}
+  selector:
+    matchLabels:
+      {{- include "hatch.selector" (dict "root" . "name" $name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hatch.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ $name }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $name }}
+          image: {{ include "hatch.image" (dict "root" . "name" $name) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: HATCH_ORCHESTRATOR_URL
+              value: http://{{ include "hatch.fullname" . }}-orchestrator:8000
+            - name: HATCH_ZTP_RATE_LIMIT
+              value: {{ .Values.ztp.rateLimitPerMinute | quote }}
+            - name: HATCH_ZTP_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.ztp.tokenSecret }}, key: token}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          resources:
+            {{- toYaml .Values.ztp.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hatch.fullname" . }}-{{ $name }}
+  labels:
+    {{- include "hatch.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.ztp.service.type }}
+  selector:
+    {{- include "hatch.selector" (dict "root" . "name" $name) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.ztp.service.port }}
+      targetPort: http
+{{- end }}

@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  orchestrator:
+    name: Orchestrator (lint, types, tests)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+    defaults:
+      run:
+        working-directory: orchestrator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Ruff
+        run: ruff check app tests && ruff format --check app tests
+      - name: Mypy
+        run: mypy app
+      - name: Tests
+        run: pytest --cov=app --cov-report=term --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        if: matrix.python == '3.12'
+        with:
+          name: coverage
+          path: orchestrator/coverage.xml
+
+  templates:
+    name: Golden template governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e orchestrator
+      - name: Test-render every template and gate on the security baseline
+        run: hatchctl templates lint
+
+  ztp-service:
+    name: ZTP edge service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ztp-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: pytest
+
+  ui:
+    name: UI (types, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/hatch
+      - run: helm template hatch deploy/helm/hatch --set ingress.enabled=true > /dev/null
+
+  e2e:
+    name: End-to-end (docker compose + virtual devices)
+    runs-on: ubuntu-latest
+    needs: [orchestrator, ztp-service, ui]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build -d
+      - name: Wait for the stack
+        run: |
+          for i in $(seq 1 60); do
+            curl -fs localhost:8000/readyz && curl -fs localhost:8081/healthz && curl -fs localhost:8080/ > /dev/null && exit 0
+            sleep 2
+          done
+          docker compose logs; exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx
+      - name: Seed onboardings and boot ZTP devices
+        run: |
+          python tools/hatch_demo.py seed
+          sleep 3
+          python tools/hatch_demo.py boot-all
+          sleep 5
+      - name: Assert outcomes
+        run: |
+          curl -fs -H "Authorization: Bearer dev-requester" "localhost:8000/api/v1/onboardings?status=COMPLETED" \
+            | python -c "import json,sys; d=json.load(sys.stdin); print(d['total'], 'completed'); sys.exit(0 if d['total'] >= 5 else 1)"
+      - if: failure()
+        run: docker compose logs

@@ -1,0 +1,62 @@
+# Full Hatch stack on one machine: UI, orchestrator, ZTP edge service and Postgres.
+#   docker compose up --build
+#   open http://localhost:8080   (API docs: http://localhost:8000/docs)
+name: hatch
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hatch
+      POSTGRES_PASSWORD: hatch
+      POSTGRES_DB: hatch
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hatch"]
+      interval: 5s
+      retries: 10
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    environment:
+      HATCH_ENV: dev
+      HATCH_DATABASE_URL: postgresql+psycopg://hatch:hatch@postgres:5432/hatch
+      HATCH_DRIVER: simulated
+      HATCH_PUBLIC_ZTP_URL: http://localhost:8081
+      HATCH_CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      # Generate your own with:
+      #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      HATCH_SECRET_KEY: ${HATCH_SECRET_KEY:-}
+    volumes:
+      - backups:/var/lib/hatch/backups
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ztp:
+    build: ./ztp-service
+    environment:
+      HATCH_ORCHESTRATOR_URL: http://orchestrator:8000
+      HATCH_ZTP_SERVICE_TOKEN: dev-ztp-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - orchestrator
+
+  ui:
+    build: ./ui
+    environment:
+      HATCH_API_UPSTREAM: http://orchestrator:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - orchestrator
+
+volumes:
+  pgdata:
+  backups:

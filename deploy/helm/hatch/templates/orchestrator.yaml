@@ -1,0 +1,108 @@
+{{- $name := "orchestrator" -}}
+{{- $o := .Values.orchestrator -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hatch.fullname" . }}-{{ $name }}
+  labels:
+    {{- include "hatch.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ $name }}
+spec:
+  replicas: {{ $o.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "hatch.selector" (dict "root" . "name" $name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hatch.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ $name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: /metrics
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        fsGroup: 10001
+      containers:
+        - name: {{ $name }}
+          image: {{ include "hatch.image" (dict "root" . "name" $name) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - {name: HATCH_ENV, value: {{ $o.env | quote }}}
+            - {name: HATCH_DRIVER, value: {{ $o.driver | quote }}}
+            - {name: HATCH_WORKERS, value: {{ $o.workers | quote }}}
+            - {name: HATCH_PUBLIC_ZTP_URL, value: {{ $o.publicZtpUrl | quote }}}
+            - {name: HATCH_SECRET_BACKEND, value: {{ $o.secretBackend | quote }}}
+            - {name: HATCH_VAULT_ADDR, value: {{ $o.vault.addr | quote }}}
+            - {name: HATCH_VAULT_MOUNT, value: {{ $o.vault.mount | quote }}}
+            - {name: HATCH_NOTIFY_WEBHOOK_URL, value: {{ $o.webhooks.notify | quote }}}
+            - {name: HATCH_MONITORING_WEBHOOK_URL, value: {{ $o.webhooks.monitoring | quote }}}
+            - {name: HATCH_ITSM_WEBHOOK_URL, value: {{ $o.webhooks.itsm | quote }}}
+            - name: HATCH_DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: {{ $o.database.existingSecret }}, key: {{ $o.database.key }}}
+            - name: HATCH_SECRET_KEY
+              valueFrom:
+                secretKeyRef: {name: {{ $o.secretKey.existingSecret }}, key: {{ $o.secretKey.key }}}
+            - name: HATCH_API_TOKENS
+              valueFrom:
+                secretKeyRef: {name: {{ $o.apiTokens.existingSecret }}, key: {{ $o.apiTokens.key | quote }}}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 20
+          resources:
+            {{- toYaml $o.resources | nindent 12 }}
+          volumeMounts:
+            - name: backups
+              mountPath: /var/lib/hatch/backups
+      volumes:
+        - name: backups
+          {{- if $o.backups.persistence }}
+          persistentVolumeClaim:
+            claimName: {{ include "hatch.fullname" . }}-backups
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hatch.fullname" . }}-{{ $name }}
+  labels:
+    {{- include "hatch.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "hatch.selector" (dict "root" . "name" $name) | nindent 4 }}
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+{{- if $o.backups.persistence }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "hatch.fullname" . }}-backups
+  labels:
+    {{- include "hatch.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with $o.backups.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $o.backups.size }}
+{{- end }}

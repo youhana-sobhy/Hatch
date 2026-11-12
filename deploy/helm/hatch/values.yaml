@@ -1,0 +1,72 @@
+# Default values for the Hatch chart.
+image:
+  registry: ghcr.io/youhana-sobhy
+  tag: ""          # defaults to the chart appVersion
+  pullPolicy: IfNotPresent
+
+orchestrator:
+  replicas: 1      # pipelines run in-process; scale out after moving to an external queue
+  env: prod
+  driver: simulated
+  workers: 4
+  publicZtpUrl: https://ztp.hatch.example.internal
+  database:
+    # External Postgres; the SQLAlchemy URL is read from this secret key.
+    existingSecret: hatch-database
+    key: url
+  secretKey:
+    # Fernet key that encrypts secrets at rest (local secret backend).
+    existingSecret: hatch-secret-key
+    key: key
+  apiTokens:
+    # JSON list of {token, user, role, sites}.
+    existingSecret: hatch-api-tokens
+    key: tokens.json
+  secretBackend: local     # or "vault" (any KV v2 compatible engine)
+  vault:
+    addr: ""
+    mount: secret
+  webhooks:
+    notify: ""
+    monitoring: ""
+    itsm: ""
+  backups:
+    persistence: true
+    size: 5Gi
+    storageClass: ""
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}
+
+ztp:
+  enabled: true
+  replicas: 2
+  rateLimitPerMinute: 30
+  tokenSecret: hatch-ztp-token
+  service:
+    # Devices on the management network must reach this; LoadBalancer is typical.
+    type: LoadBalancer
+    port: 80
+  resources:
+    requests: {cpu: 50m, memory: 96Mi}
+    limits: {memory: 192Mi}
+
+ui:
+  enabled: true
+  replicas: 2
+  resources:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {memory: 64Mi}
+
+ingress:
+  enabled: false
+  className: nginx
+  host: hatch.example.internal
+  tls: []
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities: {drop: [ALL]}
