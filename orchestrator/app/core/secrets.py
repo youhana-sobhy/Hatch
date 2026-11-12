@@ -15,8 +15,10 @@ import re
 import secrets as pysecrets
 import string
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 
 from cryptography.fernet import Fernet, InvalidToken
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
@@ -41,6 +43,12 @@ class SecretStore(ABC):
 
     @abstractmethod
     def exists(self, path: str) -> bool: ...
+
+    def get_or_create(self, path: str, factory: Callable[[], str]) -> str:
+        """Return the secret at ``path``, creating it with ``factory()`` if it is missing."""
+        if not self.exists(path):
+            self.put(path, factory())
+        return self.get(path)
 
 
 def _fernet(settings: Settings) -> Fernet:
@@ -79,6 +87,18 @@ class LocalSecretStore(SecretStore):
 
     def exists(self, path: str) -> bool:
         return self.session.get(SecretRecord, path) is not None
+
+    def get_or_create(self, path: str, factory: Callable[[], str]) -> str:
+        """Race-safe: concurrent pipelines may both try to create the same shared secret.
+        The insert runs in a SAVEPOINT; the loser rolls back and reads the winner's value."""
+        if self.session.get(SecretRecord, path) is None:
+            ciphertext = self.fernet.encrypt(factory().encode()).decode()
+            try:
+                with self.session.begin_nested():
+                    self.session.add(SecretRecord(path=path, ciphertext=ciphertext))
+            except IntegrityError:
+                self.session.expire_all()
+        return self.get(path)
 
 
 def get_store(session: Session) -> SecretStore:
@@ -158,8 +178,7 @@ class SecretResolver:
             if not self.auto_create_shared:
                 raise SecretNotFound(path)
             log.warning("secret %s missing; generating a development value", path)
-            self.store.put(path, generate_password())
-        return self.redactor.register(self.store.get(path))
+        return self.redactor.register(self.store.get_or_create(path, generate_password))
 
     def device(self, name: str) -> str:
         path = f"devices/{self.serial}/{name}"
@@ -167,9 +186,7 @@ class SecretResolver:
         if not self.live:
             return f"{{{{ device_secret:{name} }}}}"
         assert self.store is not None
-        if not self.store.exists(path):
-            self.store.put(path, generate_password())
-        return self.redactor.register(self.store.get(path))
+        return self.redactor.register(self.store.get_or_create(path, generate_password))
 
 
 _PLACEHOLDER = re.compile(r"\{\{ (device_)?secret:[^}]+ \}\}")

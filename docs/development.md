@@ -14,7 +14,7 @@ http://localhost:5173. Then `python tools/hatch_demo.py seed` and `boot-all`.
 ## Tests
 
 ```bash
-cd orchestrator && pytest --cov=app      # 54 tests, ~90% coverage, runs in seconds
+cd orchestrator && pytest --cov=app      # 56 tests, ~90% coverage, runs in seconds
 cd ztp-service && pytest                  # edge service against a mocked orchestrator
 cd ui && npm test && npm run build        # vitest + strict TypeScript build
 hatchctl templates lint                   # template governance
@@ -30,6 +30,7 @@ state machine, renderer, compliance engine, git backups and driver contract end 
 | `test_rendering_and_compliance.py` | layering, placeholders, strict undefined, redaction, every template passes its baseline, rule types and scoping |
 | `test_api_onboarding.py` | auth, push E2E, no-secret-leak, validation, duplicates, dry run, approvals and four-eyes, retry from post-checks and from push, rollback to snapshot, compliance gate, cancel, batches, CSV, report and audit, site scope, KPIs and metrics |
 | `test_ztp.py` | ZTP E2E, pre-registration, service role, forged token, model mismatch, one-time tokens, reset to Day-0 |
+| `test_secrets.py` | encryption at rest, race-safe first use of shared secrets |
 | `test_units.py` | policy matching, password generation, IP rules, suggestions, CSV uplinks, event bus |
 
 ## Code quality

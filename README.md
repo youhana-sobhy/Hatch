@@ -267,7 +267,7 @@ hatch/
 │   ├── app/integrations/     git backups, KV v2 secrets, webhooks
 │   ├── app/reports/          onboarding report (HTML / JSON)
 │   ├── app/cli.py            hatchctl: template lint/render, compliance check
-│   └── tests/                54 tests, 90% coverage
+│   └── tests/                56 tests, 90% coverage
 ├── ztp-service/              stateless ZTP edge service
 ├── ui/                       React + TypeScript + Vite
 ├── templates/                golden templates <vendor>/<role>/, layers, device catalog
