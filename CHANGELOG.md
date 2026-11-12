@@ -11,7 +11,7 @@ All notable changes to this project are documented here. The format follows
 - Orchestrator: REST + WebSocket API, guarded onboarding state machine with audit trail,
   nine-stage pipeline engine with per-vendor configuration, retry from the failed stage,
   rollback to snapshot and ZTP reset.
-- Layered golden templates (global, market, site, role, device) with content-addressed
+- Layered golden templates (global, region, site, role, device) with content-addressed
   versions, strict rendering, preview and diff.
 - Secret store (Fernet or KV v2), per-device generated credentials and output redaction.
 - Compliance engine with 44 baseline rules across NX-OS, FortiOS, Junos, PAN-OS and ESXi.

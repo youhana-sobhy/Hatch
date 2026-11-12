@@ -20,7 +20,7 @@ services:
   orchestrator:
     build:
       context: .
-      dockerfile: orchestrator/Dockerfile
+      dockerfile: backend/Dockerfile
     environment:
       HATCH_ENV: dev
       HATCH_DATABASE_URL: postgresql+psycopg://hatch:hatch@postgres:5432/hatch
@@ -49,7 +49,7 @@ services:
       - orchestrator
 
   ui:
-    build: ./ui
+    build: ./frontend
     environment:
       HATCH_API_UPSTREAM: http://orchestrator:8000
     ports:

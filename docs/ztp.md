@@ -8,7 +8,7 @@ applies a minimal Day-0, calls home, and Hatch pushes the full Day-1 configurati
 * **ZTP edge service** ([`ztp-service/`](../ztp-service)): the only Hatch endpoint devices
   reach. Deploy it centrally, or as a small pod per site when management networks cannot reach
   the core. Stateless; its only secret is its service token.
-* **Orchestrator** renders Day-0 from `templates/<vendor>/<role>/day0.j2` and owns the token
+* **Orchestrator** renders Day-0 from `golden-templates/<vendor>/<role>/day0.j2` and owns the token
   lifecycle.
 
 ## Vendor endpoints

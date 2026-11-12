@@ -1,0 +1,4 @@
+# Layer 2: region overrides for the eu-central region.
+timezone: Europe/Berlin
+ntp_servers: [10.203.0.123, 10.203.1.123]
+syslog_servers: [10.203.0.51, 10.203.1.51]

@@ -17,7 +17,7 @@ var/
 
 # Node
 node_modules/
-ui/dist/
+frontend/dist/
 
 # Editors / OS
 .idea/

@@ -9,29 +9,29 @@ help: ## Show this help
 
 install: ## Create the virtualenv and install everything
 	$(PY) -m venv $(VENV)
-	$(BIN)/pip install -e "orchestrator[dev]" -e "ztp-service[dev]" httpx
-	cd ui && npm install
+	$(BIN)/pip install -e "backend[dev]" -e "ztp-service[dev]" httpx
+	cd frontend && npm install
 
 dev-api: ## Run the orchestrator with auto-reload on :8000
-	cd orchestrator && ../$(BIN)/uvicorn app.main:app --reload --port 8000
+	cd backend && ../$(BIN)/uvicorn app.main:app --reload --port 8000
 
 dev-ztp: ## Run the ZTP edge service on :8081
 	cd ztp-service && ../$(BIN)/uvicorn ztp.main:app --port 8081
 
 dev-ui: ## Run the UI with hot reload on :5173
-	cd ui && npm run dev
+	cd frontend && npm run dev
 
 test: ## Run every test suite
-	cd orchestrator && ../$(BIN)/pytest --cov=app
+	cd backend && ../$(BIN)/pytest --cov=app
 	cd ztp-service && ../$(BIN)/pytest
-	cd ui && npm test
+	cd frontend && npm test
 
 lint: ## Lint and type-check
-	cd orchestrator && ../$(BIN)/ruff check app tests && ../$(BIN)/ruff format --check app tests && ../$(BIN)/mypy app
-	cd ui && npx tsc -b --noEmit
+	cd backend && ../$(BIN)/ruff check app tests && ../$(BIN)/ruff format --check app tests && ../$(BIN)/mypy app
+	cd frontend && npx tsc -b --noEmit
 
 format: ## Auto-format Python code
-	cd orchestrator && ../$(BIN)/ruff format app tests && ../$(BIN)/ruff check --fix app tests
+	cd backend && ../$(BIN)/ruff format app tests && ../$(BIN)/ruff check --fix app tests
 
 templates: ## Test-render every golden template against the baseline
 	$(BIN)/hatchctl templates lint

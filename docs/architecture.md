@@ -71,7 +71,7 @@ erDiagram
         string model
         string role
         string site
-        string market
+        string region
         string mode "ztp | push"
         string mgmt_ip
         json attributes "uplinks, vars, simulate"

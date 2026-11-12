@@ -5,7 +5,7 @@ configuration**, after post-checks and before the device is registered anywhere.
 
 ## Rule files
 
-[`compliance/rules/`](../compliance/rules): `common.yaml` applies to every vendor, and
+[`compliance-rules/`](../compliance-rules): `common.yaml` applies to every vendor, and
 `<vendor>.yaml` applies to that vendor family. Rule ids must be unique across files.
 
 ```yaml

@@ -77,7 +77,7 @@ Blank `hostname` / `mgmt_ip` are allocated from the site naming pattern and mana
 
 `GET /api/v1/onboardings?status=FAILED,PENDING_APPROVAL&site=ams-dc1&q=leaf&limit=50&offset=0`
 
-Filters: `site`, `market`, `vendor`, `status` (comma-separated), `mode`, `batch_id`, `q`
+Filters: `site`, `region`, `vendor`, `status` (comma-separated), `mode`, `batch_id`, `q`
 (hostname, serial or IP contains). Returns `{items, total, limit, offset}`.
 
 ### Detail
@@ -93,7 +93,7 @@ Filters: `site`, `market`, `vendor`, `status` (comma-separated), `mode`, `batch_
 {
   "template": "nxos/leaf",
   "template_version": "1.4.0+522f278f14",
-  "layers": ["global", "markets/eu-west", "sites/ams-dc1", "roles/leaf", "device"],
+  "layers": ["global", "regions/eu-west", "sites/ams-dc1", "roles/leaf", "device"],
   "config": "hostname ams-dc1-leaf-01\n...tacacs-server host 10.255.0.49 key 0 {{ secret:aaa/tacacs_key }}\n...",
   "diff": "--- current running configuration\n+++ ams-dc1-leaf-01 (golden)\n@@ ...",
   "diff_against": "current running configuration",
@@ -138,10 +138,13 @@ Devices never call these directly; they call the [ZTP edge service](ztp.md).
 | `GET /api/v1/templates[?vendor=&role=]` | template metadata |
 | `GET /api/v1/templates/{vendor}/{role}` | metadata, `source`, `day0_source`, `example` |
 | `POST /api/v1/templates/reload` | reload content from disk (maintainer) |
+| `POST /api/v1/templates/{vendor}/{role}/render` | test render: body `{"overrides": {...}, "source": "config.j2" | "day0.j2"}` merged over the example fixture; returns config (secret placeholders), layers, baseline results and `gate_passed` |
+| `GET /api/v1/sites` | sites with region, prefix, gateway and allocation counts |
+| `GET /api/v1/ip-ranges` | management IP ranges (IPAM): prefix, reserved, allocatable, allocated, free, utilisation |
 | `GET /api/v1/compliance/rules[?vendor=]` | baseline rules |
 | `GET /api/v1/devices[?site=&status=]` | inventory |
 | `GET /api/v1/audit[?onboarding_id=&actor=&limit=]` | audit events, newest first |
-| `GET /api/v1/stats` | KPIs: totals by status/vendor/market, median time to complete, first-time-right rate, compliance pass rate, stage failures (7 days), active devices |
+| `GET /api/v1/stats` | KPIs: totals by status/vendor/region, median time to complete, first-time-right rate, compliance pass rate, stage failures (7 days), active devices |
 
 ## System
 

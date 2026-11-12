@@ -55,14 +55,14 @@ Day-0) or **cancel**.
 |---|---|
 | **Explicit state machine** | Every status change goes through one guarded `transition()` that enforces the allowed edges, writes the audit log and streams a live event. |
 | **Pipeline engine** | Nine ordered stages, each in its own transaction with a `StageRun` record, structured details and redacted output. Per-vendor behaviour is configuration (`pipelines/<vendor>.yaml`), not code. |
-| **Layered golden templates** | `global → market → site → role → device`, so every setting lives in exactly one place. Jinja2 with `StrictUndefined`: a missing variable is a hard error, never a silent blank line. Versions are content-addressed (`1.4.0+522f278f14`). |
+| **Layered golden templates** | `global → region → site → role → device`, so every setting lives in exactly one place. Jinja2 with `StrictUndefined`: a missing variable is a hard error, never a silent blank line. Versions are content-addressed (`1.4.0+522f278f14`). |
 | **Secrets that never leak** | Templates call `secret('aaa/tacacs_key')` and `device_secret('local_admin')`. Previews show placeholders; live renders register every value with a redactor that masks all stage output, evidence, backups, reports and diffs. Unique per-device passwords are generated and stored encrypted (Fernet) or in any KV v2 secret engine. A test asserts the real TACACS key appears on no API surface. |
 | **Compliance as code** | YAML rules per vendor (`must_match`, `must_not_match`, `must_match_all`, `count_at_least`). Critical/high failures block the onboarding; medium/low are reported. 44 rules across 5 vendor families ship by default. |
 | **Template governance in CI** | `hatchctl templates lint` test-renders every template with its fixture and runs the baseline against the result. A template that would produce a non-compliant device cannot merge. |
 | **Zero-touch provisioning** | A stateless edge service serves vendor-native Day-0 (NX-OS POAP, Junos ZTP, FortiOS, PAN-OS bootstrap, ESXi kickstart) only to **pre-registered serials**, embeds a **one-time, expiring call-home token**, rate-limits per IP and never exposes the core API to devices. |
-| **Approvals and RBAC** | Requester, approver, maintainer, admin and service roles, optionally scoped to sites. First-match approval policy per market/site/role/vendor/mode. Four-eyes rule: you cannot approve your own request. |
+| **Approvals and RBAC** | Requester, approver, maintainer, admin and service roles, optionally scoped to sites. First-match approval policy per region/site/role/vendor/mode. Four-eyes rule: you cannot approve your own request. |
 | **Bulk onboarding** | JSON batches or CSV import with per-row results. Leave hostname and IP blank and Hatch allocates them from the site naming pattern and IPAM. |
-| **Live UI** | React + TypeScript: dashboard KPIs, a live journey track (*Discovered → Day-0 → Day-1 → Post-checks → Compliance → Monitoring → Done*), config preview and diff, compliance evidence, audit trail, one-click report. Updates stream over a WebSocket. |
+| **Live UI** | React + TypeScript: dashboard KPIs, a live journey track (*Discovered → Day-0 → Day-1 → Post-checks → Compliance → Handed over → Done*), config preview and diff, compliance evidence, audit trail, one-click report. Updates stream over a WebSocket. |
 | **Runs anywhere** | A built-in **virtual device fleet** runs the entire flow on a laptop or in CI, with fault injection to demo failure, retry and rollback. An SSH driver talks to real devices. Docker Compose for local, Helm for Kubernetes, Prometheus `/metrics`. |
 
 ## Screenshots
@@ -137,14 +137,14 @@ stateDiagram-v2
     DAY0_APPLIED --> DAY1_CONFIGURING
     DAY1_CONFIGURING --> VERIFYING: config pushed
     VERIFYING --> COMPLIANCE_CHECK: post-checks pass
-    COMPLIANCE_CHECK --> REGISTERING: baseline gate passes
-    REGISTERING --> COMPLETED: backup, inventory, monitoring, report
+    COMPLIANCE_CHECK --> HANDING_OVER: baseline gate passes
+    HANDING_OVER --> COMPLETED: backup, inventory, monitoring, report
     COMPLETED --> [*]
 
     DAY1_CONFIGURING --> FAILED
     VERIFYING --> FAILED
     COMPLIANCE_CHECK --> FAILED
-    REGISTERING --> FAILED
+    HANDING_OVER --> FAILED
     FAILED --> DAY1_CONFIGURING: retry
     FAILED --> VERIFYING: retry
     FAILED --> WAITING_FOR_DEVICE: ZTP reset to Day-0
@@ -155,7 +155,7 @@ stateDiagram-v2
 ```
 
 Any non-terminal state can move to `FAILED`; states before execution can be `CANCELLED`.
-The table lives in [`state_machine.py`](orchestrator/app/core/state_machine.py) and
+The table lives in [`state_machine.py`](backend/app/core/state_machine.py) and
 `hatchctl state-diagram` prints the complete graph. See
 [docs/state-machine.md](docs/state-machine.md).
 
@@ -169,7 +169,7 @@ flowchart LR
     D --> E[post_checks<br/>AAA · NTP · uplinks · LLDP<br/>routing · HA · cluster]
     E --> F[compliance_scan<br/>baseline gate]
     F --> G[backup_config<br/>git commit]
-    G --> H[register_device<br/>inventory · monitoring]
+    G --> H[hand_over<br/>inventory · monitoring]
     H --> I[report]
 ```
 
@@ -196,14 +196,14 @@ API docs (OpenAPI) are at **http://localhost:8000/docs**.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
-pip install -e "orchestrator[dev]" -e "ztp-service[dev]"
+pip install -e "backend[dev]" -e "ztp-service[dev]"
 
 # terminal 1: orchestrator (SQLite, simulated devices)
-cd orchestrator && uvicorn app.main:app --reload --port 8000
+cd backend && uvicorn app.main:app --reload --port 8000
 # terminal 2: ZTP edge service
 cd ztp-service && uvicorn ztp.main:app --port 8081
 # terminal 3: UI with hot reload
-cd ui && npm install && npm run dev                  # http://localhost:5173
+cd frontend && npm install && npm run dev                  # http://localhost:5173
 ```
 
 Or use the `Makefile`: `make install`, `make dev-api`, `make dev-ztp`, `make dev-ui`,
@@ -233,7 +233,7 @@ All endpoints take `Authorization: Bearer <token>`. Full schema at `/docs`.
 | `POST` | `/api/v1/onboardings` | Create one onboarding, or a batch with `{"devices": [...]}` |
 | `POST` | `/api/v1/onboardings/import` | Bulk import from CSV (auto-allocates blank hostnames and IPs) |
 | `POST` | `/api/v1/onboardings/dry-run` | Validate and preview without creating |
-| `GET` | `/api/v1/onboardings` | List and filter (`site`, `market`, `vendor`, `status`, `mode`, `batch_id`, `q`) |
+| `GET` | `/api/v1/onboardings` | List and filter (`site`, `region`, `vendor`, `status`, `mode`, `batch_id`, `q`) |
 | `GET` | `/api/v1/onboardings/{id}` | Detail with stage history, compliance and allowed actions |
 | `GET` | `/api/v1/onboardings/{id}/preview` | Rendered golden config (secrets masked) and diff |
 | `POST` | `/api/v1/onboardings/{id}/approve` | Approve (approver role, never your own request) |
@@ -244,6 +244,8 @@ All endpoints take `Authorization: Bearer <token>`. Full schema at `/docs`.
 | `GET` | `/api/v1/ztp/bootstrap/{serial}` | Day-0 for a pre-registered serial (service role) |
 | `POST` | `/api/v1/ztp/callhome` | Device call-home with its one-time token (service role) |
 | `GET` | `/api/v1/templates` | Golden template library (`/templates/{vendor}/{role}` for source) |
+| `POST` | `/api/v1/templates/{vendor}/{role}/render` | Test render with sample data, plus the baseline gate result |
+| `GET` | `/api/v1/sites`, `/api/v1/ip-ranges` | Sites with region, and management IP ranges with utilisation |
 | `GET` | `/api/v1/catalog` | Sites, models, roles and the state machine |
 | `GET` | `/api/v1/catalog/suggest` | Next free hostnames and management IPs |
 | `GET` | `/api/v1/compliance/rules` | Security baseline rules |
@@ -259,7 +261,7 @@ Examples for every endpoint: [docs/api.md](docs/api.md).
 
 ```
 hatch/
-├── orchestrator/             FastAPI service
+├── backend/                  FastAPI orchestrator
 │   ├── app/api/              REST + WebSocket endpoints
 │   ├── app/core/             state machine, pipeline, rendering, validation, policies,
 │   │                         compliance, secrets, audit, events, worker
@@ -267,11 +269,11 @@ hatch/
 │   ├── app/integrations/     git backups, KV v2 secrets, webhooks
 │   ├── app/reports/          onboarding report (HTML / JSON)
 │   ├── app/cli.py            hatchctl: template lint/render, compliance check
-│   └── tests/                56 tests, 90% coverage
+│   └── tests/                58 tests, 90% coverage
 ├── ztp-service/              stateless ZTP edge service
-├── ui/                       React + TypeScript + Vite
-├── templates/                golden templates <vendor>/<role>/, layers, device catalog
-├── compliance/rules/         security baseline per vendor (YAML)
+├── frontend/                 React + TypeScript + Vite
+├── golden-templates/         golden templates <vendor>/<role>/, layers, device catalog
+├── compliance-rules/         security baseline per vendor (YAML)
 ├── pipelines/                pipeline definition per vendor (YAML)
 ├── policies/                 approval policy (YAML)
 ├── deploy/helm/hatch/        Helm chart

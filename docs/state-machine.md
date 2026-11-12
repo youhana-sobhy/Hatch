@@ -1,6 +1,6 @@
 # Onboarding state machine
 
-Source: [`orchestrator/app/core/state_machine.py`](../orchestrator/app/core/state_machine.py).
+Source: [`backend/app/core/state_machine.py`](../backend/app/core/state_machine.py).
 `hatchctl state-diagram` prints the full transition table as Mermaid.
 
 ## States
@@ -16,7 +16,7 @@ Source: [`orchestrator/app/core/state_machine.py`](../orchestrator/app/core/stat
 | `DAY1_CONFIGURING` | `pre_validate`, `os_upgrade`, `render_config`, `push_config` | pipeline |
 | `VERIFYING` | `post_checks` | pipeline |
 | `COMPLIANCE_CHECK` | `compliance_scan` (the baseline gate) | pipeline |
-| `REGISTERING` | `backup_config`, `register_device`, `report` | pipeline |
+| `HANDING_OVER` | `backup_config`, `hand_over`, `report` | pipeline |
 | `COMPLETED` | In service: inventory active, monitored, backed up, report ready | terminal |
 | `FAILED` | A stage failed; `failed_stage` and `error` say where and why | engineer |
 | `ROLLED_BACK` | Pre-change configuration restored, identifiers released | terminal |

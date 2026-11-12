@@ -1,0 +1,12 @@
+# Layer 3: site overrides. The `site` block is site metadata (region, IPAM, naming).
+site:
+  region: eu-west
+  description: Amsterdam data centre 1
+  mgmt_prefix: 10.201.10.0/24
+  mgmt_gateway: 10.201.10.1
+  reserved_hosts: 9
+  hostname_pattern: "{site}-{role}-{index:02d}"
+snmp_location: "AMS-DC1, Hall 2"
+fabric:
+  bgp_asn_base: 65100
+  spines: [ams-dc1-spine-01, ams-dc1-spine-02]

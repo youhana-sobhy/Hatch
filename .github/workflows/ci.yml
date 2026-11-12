@@ -18,7 +18,7 @@ jobs:
         python: ["3.11", "3.12"]
     defaults:
       run:
-        working-directory: orchestrator
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,7 +36,7 @@ jobs:
         if: matrix.python == '3.12'
         with:
           name: coverage
-          path: orchestrator/coverage.xml
+          path: backend/coverage.xml
 
   templates:
     name: Golden template governance
@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e orchestrator
+      - run: pip install -e backend
       - name: Test-render every template and gate on the security baseline
         run: hatchctl templates lint
 
@@ -71,14 +71,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ui
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm test
       - run: npm run build

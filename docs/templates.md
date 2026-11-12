@@ -1,18 +1,18 @@
 # Golden templates
 
 Golden templates are the single definition of how a device of a given **vendor × role** is
-configured. They live in [`templates/`](../templates) and change only through reviewed pull
+configured. They live in [`golden-templates/`](../golden-templates) and change only through reviewed pull
 requests that CI has test-rendered.
 
 ## Layout
 
 ```
-templates/
+golden-templates/
 ├── _catalog/models.yaml            model → vendor family, allowed roles
 ├── _layers/
 │   ├── global.yaml                 1. global baseline (naming, AAA, NTP, SNMP, banner, mgmt ACL)
-│   ├── markets/<market>.yaml       2. market overrides (time zone, regional NTP/syslog/DNS)
-│   ├── sites/<site>.yaml           3. site overrides + site metadata (market, mgmt prefix, gateway, naming)
+│   ├── regions/<region>.yaml       2. region overrides (time zone, regional NTP/syslog/DNS)
+│   ├── sites/<site>.yaml           3. site overrides + site metadata (region, mgmt prefix, gateway, naming)
 │   └── roles/<role>.yaml           4. role defaults (VLANs, MTU, HA, zones)
 └── <vendor>/<role>/
     ├── template.yaml               metadata: version, status, owner, required_vars, example fixture
@@ -25,12 +25,12 @@ The fifth layer, **device**, is the `vars` object on the onboarding request.
 ## Layering
 
 Layers merge left to right with `deep_merge`: nested mappings merge, lists and scalars are
-replaced. For `ams-dc1` (market `eu-west`), role `leaf`:
+replaced. For `ams-dc1` (region `eu-west`), role `leaf`:
 
 | Variable | global | eu-west | ams-dc1 | leaf | result |
 |---|---|---|---|---|---|
 | `timezone` | `UTC` | `Europe/Amsterdam` | | | `Europe/Amsterdam` |
-| `ntp_servers` | `10.255.0.123, …` | `10.201.0.123, …` | | | market value |
+| `ntp_servers` | `10.255.0.123, …` | `10.201.0.123, …` | | | region value |
 | `snmp_location` | | | `AMS-DC1, Hall 2` | | site value |
 | `vlans` | | | | `100, 110, 120, 900` | role value |
 
@@ -39,7 +39,7 @@ The preview and the `render_config` stage both report the layers that were appli
 ## Context available to templates
 
 * Every merged layer variable at the top level (`ntp_servers`, `aaa.tacacs_servers`, …).
-* `device`: `hostname`, `serial`, `vendor`, `model`, `role`, `site`, `market`, `mode`,
+* `device`: `hostname`, `serial`, `vendor`, `model`, `role`, `site`, `region`, `mode`,
   `mgmt_ip`, `mgmt_prefix`, `mgmt_prefixlen`, `mgmt_netmask`, `mgmt_gateway`, `uplinks`.
 * `template`: `key`, `version`.
 * `ztp` (Day-0 only): `callhome_url`, `token`, `serial`.
@@ -64,7 +64,7 @@ real values that are registered with the redactor and masked everywhere Hatch wr
 
 ```yaml
 version: 1.4.0               # bump on every change; the content hash is appended automatically
-status: approved             # draft templates are rejected unless HATCH_ALLOW_DRAFT_TEMPLATES=true
+status: approved             # draft -> in_review -> approved; only approved templates onboard devices
 owner: dc-network-platform   # the team that must review changes
 description: NX-OS data-centre leaf (BGP underlay, VLANs, uplinks to spines)
 required_vars: [ntp_servers, syslog_servers, aaa, snmp, vlans, mgmt_acl]
@@ -97,8 +97,8 @@ template change that would onboard a non-compliant device cannot merge.
 ## Adding a vendor or role
 
 1. Add models to `_catalog/models.yaml` with their vendor family and allowed roles.
-2. Create `templates/<vendor>/<role>/` with `template.yaml`, `config.j2` and, for ZTP, `day0.j2`.
-3. Add `compliance/rules/<vendor>.yaml` (the common rules apply automatically).
+2. Create `golden-templates/<vendor>/<role>/` with `template.yaml`, `config.j2` and, for ZTP, `day0.j2`.
+3. Add `compliance-rules/<vendor>.yaml` (the common rules apply automatically).
 4. Add `pipelines/<vendor>.yaml` to choose post-checks and the approved OS image.
 5. For real hardware, add a command profile to `drivers/ssh.py` (or a new driver).
 6. Run `hatchctl templates lint` and `pytest`.
