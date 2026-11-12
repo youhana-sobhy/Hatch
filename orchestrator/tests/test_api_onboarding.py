@@ -203,6 +203,8 @@ def test_batch_partially_accepts(client, leaf_request):
     assert body["rejected"][0]["index"] == 2
     listing = client.get(f"/api/v1/onboardings?batch_id={body['batch_id']}", headers=auth("requester"))
     assert listing.json()["total"] == 2
+    # Every accepted row runs its pipeline.
+    assert all(detail(client, ob["id"])["status"] == "COMPLETED" for ob in body["created"])
 
 
 def test_csv_import_auto_allocates_hostnames_and_ips(client):

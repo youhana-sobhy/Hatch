@@ -11,7 +11,8 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --uid 10001 --home /var/lib/hatch hatch \
- && mkdir -p /var/lib/hatch && chown hatch /var/lib/hatch
+ && mkdir -p /var/lib/hatch/backups && chown -R hatch /var/lib/hatch \
+ && git config --system --add safe.directory '*'
 
 WORKDIR /app
 COPY orchestrator/pyproject.toml orchestrator/

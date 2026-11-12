@@ -66,6 +66,10 @@ def schedule(session: Session, onboarding_id: str, start: str = "pre_validate") 
 
 @event.listens_for(Session, "after_commit")
 def _start_pipelines(session: Session) -> None:
+    # after_commit also fires when a SAVEPOINT is released (batch rows); only the outermost
+    # commit makes rows visible to other connections.
+    if session.in_nested_transaction():
+        return
     for onboarding_id, start in session.info.pop("hatch_pipelines", []):
         worker.submit(onboarding_id, start)
 

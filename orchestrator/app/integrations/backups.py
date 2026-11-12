@@ -6,6 +6,7 @@ Falls back to plain versioned files when ``git`` is not on the PATH.
 from __future__ import annotations
 
 import hashlib
+import logging
 import shutil
 import subprocess
 import threading
@@ -14,6 +15,7 @@ from pathlib import Path
 
 from app.config import get_settings
 
+log = logging.getLogger(__name__)
 _lock = threading.Lock()
 
 
@@ -42,9 +44,15 @@ class BackupStore:
     def _ensure_repo(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         if self.git and not (self.root / ".git").exists():
-            self._git("init", "-q")
-            self._git("config", "user.name", "hatch-backup")
-            self._git("config", "user.email", "hatch-backup@localhost")
+            try:
+                self._git("init", "-q")
+                self._git("config", "user.name", "hatch-backup")
+                self._git("config", "user.email", "hatch-backup@localhost")
+            except subprocess.CalledProcessError as exc:
+                log.warning(
+                    "git unavailable for backups, storing plain files: %s", (exc.stderr or "").strip()
+                )
+                self.git = None
 
     def save(self, *, site: str, hostname: str, config: str, message: str) -> BackupRef:
         digest = hashlib.sha256(config.encode()).hexdigest()
@@ -56,9 +64,12 @@ class BackupStore:
             commit = None
             if self.git:
                 rel = path.relative_to(self.root).as_posix()
-                self._git("add", rel)
-                status = self._git("status", "--porcelain", "--", rel)
-                if status:
-                    self._git("commit", "-q", "-m", message, "--", rel)
-                commit = self._git("rev-parse", "--short", "HEAD")
+                try:
+                    self._git("add", rel)
+                    if self._git("status", "--porcelain", "--", rel):
+                        self._git("commit", "-q", "-m", message, "--", rel)
+                    commit = self._git("rev-parse", "--short", "HEAD")
+                except subprocess.CalledProcessError as exc:
+                    # The file is saved either way; history is best-effort.
+                    log.warning("git backup commit failed: %s", (exc.stderr or "").strip())
             return BackupRef(location=str(path), sha256=digest, commit=commit)
