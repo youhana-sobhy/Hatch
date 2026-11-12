@@ -15,7 +15,6 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY orchestrator/pyproject.toml orchestrator/
-COPY README.md ./
 COPY orchestrator/app orchestrator/app
 RUN pip install "./orchestrator[postgres]"
 

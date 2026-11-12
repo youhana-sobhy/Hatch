@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "hatch-orchestrator"
 version = "0.1.0"
 description = "Hatch orchestrator: REST API, onboarding state machine, pipeline engine and integrations."
-readme = "../README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Youhana Sobhy" }]
