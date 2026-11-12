@@ -1,0 +1,42 @@
+rules:
+  - id: NXOS-AAA-001
+    title: TACACS+ server group configured
+    severity: critical
+    must_match: '^aaa group server tacacs\+ '
+  - id: NXOS-AAA-002
+    title: Login authentication uses central AAA with local fallback
+    severity: high
+    must_match: '^aaa authentication login default group \S+ local'
+  - id: NXOS-AAA-003
+    title: Command accounting enabled
+    severity: low
+    must_match: '^aaa accounting default group'
+  - id: NXOS-SNMP-001
+    title: No SNMPv1/v2c communities
+    severity: high
+    must_not_match: '^snmp-server community '
+    remediation: Use SNMPv3 users (snmp.v3_user) only.
+  - id: NXOS-SNMP-002
+    title: SNMPv3 user with authentication and privacy
+    severity: high
+    must_match: '^snmp-server user \S+ .*auth sha256 .* priv aes'
+  - id: NXOS-MGMT-001
+    title: Telnet disabled
+    severity: high
+    must_match: '^no feature telnet'
+  - id: NXOS-MGMT-002
+    title: VTY lines protected by management ACL
+    severity: high
+    must_match: '^\s+access-class \S+ in'
+  - id: NXOS-SSH-001
+    title: SSH version 2 only
+    severity: medium
+    must_match: '^ip ssh version 2'
+  - id: NXOS-NTP-001
+    title: At least two NTP sources
+    severity: medium
+    count_at_least: {regex: '^ntp server ', min: 2}
+  - id: NXOS-EXEC-001
+    title: Idle session timeout configured
+    severity: low
+    must_match: '^\s+exec-timeout ([1-9]|1[0-5])$'

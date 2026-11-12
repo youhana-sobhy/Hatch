@@ -1,0 +1,17 @@
+version: 1.0.3
+status: approved
+owner: ip-core
+description: Junos provider-edge router (IS-IS, BGP, hardened routing-engine filter)
+required_vars: [ntp_servers, syslog_servers, aaa, snmp, mgmt_acl]
+example:
+  hostname: fra-pop1-pe-router-01
+  serial: JN12AB34CDEF
+  model: MX204
+  site: fra-pop1
+  mgmt_ip: 10.203.30.11
+  uplinks:
+    - {interface: et-0/0/0, peer: fra-pop1-pe-router-02, peer_interface: et-0/0/0}
+  vars:
+    loopback0: 10.250.30.11
+    isis_net: 49.0001.0102.5003.0011.00
+    bgp_asn: 64500

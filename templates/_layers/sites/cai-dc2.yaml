@@ -1,0 +1,10 @@
+site:
+  market: me-north
+  description: Cairo data centre 2
+  mgmt_prefix: 10.202.20.0/24
+  mgmt_gateway: 10.202.20.1
+  reserved_hosts: 9
+snmp_location: "CAI-DC2, Row C"
+fabric:
+  bgp_asn_base: 65200
+  spines: [cai-dc2-spine-01, cai-dc2-spine-02]

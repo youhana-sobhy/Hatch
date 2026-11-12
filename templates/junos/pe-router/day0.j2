@@ -1,0 +1,20 @@
+/* Hatch Junos ZTP Day-0 for {{ device.hostname }} (serial {{ device.serial }}) */
+system {
+    host-name {{ device.serial | lower }};
+    services { ssh; netconf { ssh; } }
+}
+interfaces {
+    fxp0 { unit 0 { family inet { address {{ device.mgmt_ip }}/{{ device.mgmt_prefixlen }}; } } }
+}
+routing-options { static { route 0.0.0.0/0 next-hop {{ device.mgmt_gateway }}; } }
+event-options {
+    generate-event { HATCH-CALLHOME time-interval 60; }
+    policy hatch-callhome {
+        events HATCH-CALLHOME;
+        then {
+            execute-commands {
+                commands "request system scripts op url {{ ztp.callhome_url }}?serial={{ ztp.serial }}&token={{ ztp.token }}&model={{ device.model }}";
+            }
+        }
+    }
+}

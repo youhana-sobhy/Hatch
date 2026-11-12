@@ -1,0 +1,25 @@
+# Hatch FortiOS Day-0 bootstrap for {{ device.hostname }} (serial {{ device.serial }})
+# Minimal by design: management reachability plus a one-shot call-home.
+config system global
+    set hostname "{{ device.serial }}"
+end
+config system interface
+    edit "mgmt"
+        set ip {{ device.mgmt_ip }} {{ device.mgmt_netmask }}
+        set allowaccess ping https ssh
+    next
+end
+config router static
+    edit 1
+        set gateway {{ device.mgmt_gateway }}
+        set device "mgmt"
+    next
+end
+config system automation-action
+    edit "hatch-callhome"
+        set action-type webhook
+        set protocol https
+        set uri "{{ ztp.callhome_url }}"
+        set http-body "{\"serial\":\"{{ ztp.serial }}\",\"token\":\"{{ ztp.token }}\",\"model\":\"{{ device.model }}\",\"ip\":\"{{ device.mgmt_ip }}\"}"
+    next
+end

@@ -1,0 +1,11 @@
+# Hatch PAN-OS bootstrap (init-cfg.txt) for {{ device.hostname }} (serial {{ device.serial }})
+type=static
+ip-address={{ device.mgmt_ip }}
+default-gateway={{ device.mgmt_gateway }}
+netmask={{ device.mgmt_netmask }}
+hostname={{ device.serial }}
+dns-primary={{ dns_servers[0] }}
+op-command-modes=mgmt-interface-swap
+# call-home: {{ ztp.callhome_url }}
+# hatch-serial={{ ztp.serial }}
+# hatch-token={{ ztp.token }}

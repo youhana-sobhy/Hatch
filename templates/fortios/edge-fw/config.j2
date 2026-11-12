@@ -1,0 +1,100 @@
+# Hatch golden configuration :: {{ template.key }} {{ template.version }}
+# device {{ device.hostname }} ({{ device.model }}, serial {{ device.serial }})
+config system global
+    set hostname "{{ device.hostname }}"
+    set timezone "{{ timezone }}"
+    set admin-https-redirect enable
+    set admin-ssh-grace-time 30
+    set admintimeout {{ admin_timeout_minutes }}
+    set admin-telnet disable
+    set strong-crypto enable
+    set pre-login-banner enable
+end
+config system replacemsg admin "pre_admin-disclaimer-text"
+    set buffer "{{ banner | trim }}"
+end
+config system admin
+    edit "admin"
+        set password "{{ device_secret('local_admin') }}"
+{% for prefix in mgmt_acl %}
+        set trusthost{{ loop.index }} {{ prefix }}
+{% endfor %}
+    next
+    edit "{{ aaa.local_fallback_user }}"
+        set accprofile "super_admin"
+        set password "{{ device_secret('breakglass') }}"
+    next
+end
+config user tacacs+
+{% for server in aaa.tacacs_servers %}
+    edit "HATCH-TACACS-{{ loop.index }}"
+        set server "{{ server }}"
+        set key "{{ secret('aaa/tacacs_key') }}"
+        set authen-type ascii
+    next
+{% endfor %}
+end
+config system interface
+    edit "mgmt"
+        set ip {{ device.mgmt_ip }} {{ device.mgmt_netmask }}
+        set allowaccess ping https ssh snmp
+    next
+{% for uplink in device.uplinks %}
+    edit "{{ uplink.interface }}"
+        set description "to {{ uplink.peer }}"
+        set status up
+    next
+{% endfor %}
+end
+config router static
+    edit 1
+        set gateway {{ device.mgmt_gateway }}
+        set device "mgmt"
+    next
+end
+config system ntp
+    set ntpsync enable
+    set type custom
+    config ntpserver
+{% for server in ntp_servers %}
+        edit {{ loop.index }}
+            set ntp-server "{{ server }}"
+        next
+{% endfor %}
+    end
+end
+config system dns
+    set primary {{ dns_servers[0] }}
+    set secondary {{ dns_servers[1] | default(dns_servers[0]) }}
+end
+config log syslogd setting
+    set status enable
+    set server "{{ syslog_servers[0] }}"
+end
+config system snmp sysinfo
+    set status enable
+    set contact-info "{{ snmp.contact }}"
+    set location "{{ snmp_location }}"
+end
+config system snmp user
+    edit "{{ snmp.v3_user }}"
+        set security-level auth-priv
+        set auth-proto sha256
+        set auth-pwd "{{ secret('snmp/v3_auth') }}"
+        set priv-proto aes256
+        set priv-pwd "{{ secret('snmp/v3_priv') }}"
+    next
+end
+config system ha
+    set group-id {{ ha.group_id }}
+    set group-name "{{ device.site }}-edge"
+    set mode {{ ha.mode }}
+    set password "{{ secret('ha/' ~ device.site ~ '-edge') }}"
+    set priority {{ ha_priority | default(100) }}
+end
+config system zone
+{% for zone in zones %}
+    edit "{{ zone }}"
+    next
+{% endfor %}
+end

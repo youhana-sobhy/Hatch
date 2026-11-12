@@ -1,0 +1,8 @@
+# Layer 4: role defaults for data-centre leaf switches.
+vlans:
+  - {id: 100, name: prod-web}
+  - {id: 110, name: prod-app}
+  - {id: 120, name: prod-db}
+  - {id: 900, name: storage}
+mtu: 9216
+underlay: bgp

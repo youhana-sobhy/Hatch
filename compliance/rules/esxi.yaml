@@ -1,0 +1,25 @@
+rules:
+  - id: ESX-SSH-001
+    title: SSH service disabled after onboarding
+    severity: high
+    must_match: '^vim-cmd hostsvc/disable_ssh'
+  - id: ESX-SSH-002
+    title: SSH firewall restricted to management networks
+    severity: high
+    must_match: 'allowedip add --ruleset-id=sshServer'
+  - id: ESX-SNMP-001
+    title: SNMPv3 targets only
+    severity: high
+    must_match: '--v3targets='
+  - id: ESX-NTP-001
+    title: NTP enabled with at least two sources
+    severity: medium
+    must_match: 'system ntp set --enabled=true .*--server=\S+ .*--server='
+  - id: ESX-LOG-001
+    title: Remote syslog configured
+    severity: medium
+    must_match: 'syslog config set --loghost='
+  - id: ESX-SHELL-001
+    title: ESXi shell timeout configured
+    severity: low
+    must_match: 'ESXiShellTimeOut -i [1-9]\d{0,3}$'

@@ -1,0 +1,12 @@
+# Pipeline definition shared by every vendor. A vendor file (pipelines/<vendor>.yaml) is
+# deep-merged over this one. Stage order is fixed by the engine:
+#   pre_validate -> os_upgrade -> render_config -> push_config -> post_checks
+#   -> compliance_scan -> backup_config -> register_device -> report
+stages:
+  os_upgrade:
+    enabled: false
+  post_checks:
+    checks: [reachability, aaa_login, ntp_synced]
+  compliance_scan:
+    # Failing rules of these severities block the onboarding; others are reported.
+    fail_on: [critical, high]

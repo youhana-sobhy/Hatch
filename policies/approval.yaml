@@ -1,0 +1,21 @@
+# Approval policy. Rules are evaluated top to bottom; the first match wins.
+# Match keys: market, site, role, vendor, mode. Values: a string, a list, or "*".
+default:
+  require_approval: false
+
+rules:
+  - name: core-and-perimeter-need-approval
+    match:
+      role: [border, pe-router, dc-fw]
+    require_approval: true
+
+  - name: me-north-firewalls-need-approval
+    match:
+      market: me-north
+      role: edge-fw
+    require_approval: true
+
+  - name: access-and-compute-auto-approved
+    match:
+      role: [leaf, compute-host, edge-fw]
+    require_approval: false

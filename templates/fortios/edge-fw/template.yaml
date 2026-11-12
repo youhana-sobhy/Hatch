@@ -1,0 +1,16 @@
+version: 2.0.1
+status: approved
+owner: security-engineering
+description: FortiOS edge firewall (A-P HA, zones, hardened admin access)
+required_vars: [ntp_servers, syslog_servers, aaa, snmp, mgmt_acl, ha]
+example:
+  hostname: ams-dc1-edge-fw-01
+  serial: FG200FTK23000001
+  model: FG-200F
+  site: ams-dc1
+  mgmt_ip: 10.201.10.41
+  uplinks:
+    - {interface: wan1, peer: isp-a-ce, peer_interface: ge-0/0/1}
+    - {interface: port1, peer: ams-dc1-border-01, peer_interface: Ethernet1/10}
+  vars:
+    ha_priority: 200

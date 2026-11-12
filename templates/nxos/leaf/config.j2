@@ -1,0 +1,96 @@
+!! Hatch golden configuration :: {{ template.key }} {{ template.version }}
+!! device {{ device.hostname }} ({{ device.model }}, serial {{ device.serial }})
+hostname {{ device.hostname }}
+ip domain-name {{ domain_name }}
+clock timezone {{ timezone }}
+!
+feature tacacs+
+feature bgp
+feature lldp
+feature interface-vlan
+feature scp-server
+no feature telnet
+!
+username admin password 0 {{ device_secret('local_admin') }} role network-admin
+username {{ aaa.local_fallback_user }} password 0 {{ device_secret('breakglass') }} role network-admin
+!
+{% for server in aaa.tacacs_servers %}
+tacacs-server host {{ server }} key 0 {{ secret('aaa/tacacs_key') }}
+{% endfor %}
+aaa group server tacacs+ HATCH-TACACS
+{% for server in aaa.tacacs_servers %}
+  server {{ server }}
+{% endfor %}
+  use-vrf management
+aaa authentication login default group HATCH-TACACS local
+aaa authorization commands default group HATCH-TACACS local
+aaa accounting default group HATCH-TACACS
+!
+ssh key rsa 2048
+ip ssh version 2
+!
+{% for server in ntp_servers %}
+ntp server {{ server }} use-vrf management
+{% endfor %}
+{% for server in dns_servers %}
+ip name-server {{ server }} use-vrf management
+{% endfor %}
+{% for server in syslog_servers %}
+logging server {{ server }} 6 use-vrf management
+{% endfor %}
+logging timestamp milliseconds
+!
+snmp-server user {{ snmp.v3_user }} network-operator auth sha256 {{ secret('snmp/v3_auth') }} priv aes-128 {{ secret('snmp/v3_priv') }}
+{% if legacy_snmp_community is defined %}
+snmp-server community {{ legacy_snmp_community }} group network-operator
+{% endif %}
+snmp-server contact {{ snmp.contact }}
+snmp-server location {{ snmp_location }}
+!
+banner motd ^
+{{ banner | trim }}
+^
+!
+ip access-list HATCH-MGMT
+{% for prefix in mgmt_acl %}
+  {{ loop.index * 10 }} permit ip {{ prefix }} any
+{% endfor %}
+  1000 deny ip any any log
+line vty
+  access-class HATCH-MGMT in
+  exec-timeout 10
+!
+{% for vlan in vlans %}
+vlan {{ vlan.id }}
+  name {{ vlan.name }}
+{% endfor %}
+!
+interface mgmt0
+  vrf member management
+  ip address {{ device.mgmt_ip }}/{{ device.mgmt_prefixlen }}
+!
+vrf context management
+  ip route 0.0.0.0/0 {{ device.mgmt_gateway }}
+!
+interface loopback0
+  ip address {{ loopback0 }}/32
+!
+{% for uplink in device.uplinks %}
+interface {{ uplink.interface }}
+  description to {{ uplink.peer }} {{ uplink.peer_interface | default('') }}
+  mtu {{ mtu }}
+  no switchport
+  ip unnumbered loopback0
+  no shutdown
+!
+{% endfor %}
+router bgp {{ bgp_asn }}
+  router-id {{ loopback0 }}
+  address-family ipv4 unicast
+    network {{ loopback0 }}/32
+{% for uplink in device.uplinks %}
+  neighbor {{ uplink.interface }}
+    remote-as external
+    description {{ uplink.peer }}
+    address-family ipv4 unicast
+{% endfor %}

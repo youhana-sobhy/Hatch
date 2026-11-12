@@ -1,0 +1,5 @@
+ha:
+  mode: a-p
+  group_id: 10
+zones: [lan, wan, dmz]
+admin_timeout_minutes: 10

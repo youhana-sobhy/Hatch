@@ -1,0 +1,3 @@
+stages:
+  post_checks:
+    checks: [reachability, ntp_synced, interfaces_up, cluster_member]

@@ -1,0 +1,6 @@
+stages:
+  os_upgrade:
+    enabled: true
+    approved_version: "23.4R1"
+  post_checks:
+    checks: [reachability, aaa_login, ntp_synced, interfaces_up, lldp_neighbors, routing_adjacency]

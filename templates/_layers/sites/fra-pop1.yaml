@@ -1,0 +1,10 @@
+site:
+  market: eu-central
+  description: Frankfurt point of presence 1
+  mgmt_prefix: 10.203.30.0/25
+  mgmt_gateway: 10.203.30.1
+  reserved_hosts: 4
+snmp_location: "FRA-POP1, Cage 7"
+fabric:
+  bgp_asn_base: 65300
+  spines: []

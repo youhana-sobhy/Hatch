@@ -1,0 +1,6 @@
+stages:
+  os_upgrade:
+    enabled: true
+    approved_version: "10.3(4a)"
+  post_checks:
+    checks: [reachability, aaa_login, ntp_synced, interfaces_up, lldp_neighbors, routing_adjacency]

@@ -1,0 +1,16 @@
+version: 1.2.0
+status: approved
+owner: security-engineering
+description: PAN-OS data-centre perimeter firewall (HA pair, zones, hardened management)
+required_vars: [ntp_servers, syslog_servers, aaa, snmp, mgmt_acl, ha]
+example:
+  hostname: cai-dc2-dc-fw-01
+  serial: "013201009999"
+  model: PA-5410
+  site: cai-dc2
+  mgmt_ip: 10.202.20.51
+  uplinks:
+    - {interface: ethernet1/1, peer: cai-dc2-border-01, peer_interface: Ethernet1/20}
+  vars:
+    ha_peer_ip: 10.202.20.52
+    ha_priority: 100

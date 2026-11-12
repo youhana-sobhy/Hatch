@@ -1,0 +1,4 @@
+ha:
+  mode: active-passive
+  group_id: 1
+zones: [trust, untrust, dmz]

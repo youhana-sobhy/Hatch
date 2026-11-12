@@ -1,0 +1,30 @@
+# Hatch golden configuration :: {{ template.key }} {{ template.version }}
+# host {{ device.hostname }} ({{ device.model }}, serial {{ device.serial }})
+esxcli system hostname set --host={{ device.hostname }} --domain={{ domain_name }}
+esxcli network ip interface ipv4 set -i vmk0 -t static -I {{ device.mgmt_ip }} -N {{ device.mgmt_netmask }} -g {{ device.mgmt_gateway }}
+{% for server in dns_servers %}
+esxcli network ip dns server add --server={{ server }}
+{% endfor %}
+esxcli system ntp set --enabled=true {% for server in ntp_servers %}--server={{ server }} {% endfor %}
+
+esxcli system syslog config set --loghost={% for server in syslog_servers %}udp://{{ server }}:514{{ "," if not loop.last }}{% endfor %}
+
+esxcli system syslog reload
+esxcli system account set -i root -p '{{ device_secret('root') }}' -c '{{ device_secret('root') }}'
+esxcli system account add -i {{ aaa.local_fallback_user }} -p '{{ device_secret('breakglass') }}' -c '{{ device_secret('breakglass') }}'
+esxcli system permission set -i {{ aaa.local_fallback_user }} -r Admin
+esxcli system snmp set --enable=true --syscontact="{{ snmp.contact }}" --syslocation="{{ snmp_location }}"
+esxcli system snmp set --v3targets={{ snmp.v3_user }} --authproto=SHA1 --privproto=AES128
+esxcli system snmp hash --auth-hash='{{ secret('snmp/v3_auth') }}' --priv-hash='{{ secret('snmp/v3_priv') }}'
+esxcli system settings advanced set -o /UserVars/ESXiShellTimeOut -i 600
+esxcli system settings advanced set -o /Annotations/WelcomeMessage -s "{{ banner | trim | replace('\n', ' ') }}"
+esxcli network firewall ruleset set --ruleset-id=sshServer --allowed-all=false
+{% for prefix in mgmt_acl %}
+esxcli network firewall ruleset allowedip add --ruleset-id=sshServer --ip-address={{ prefix }}
+{% endfor %}
+vim-cmd hostsvc/disable_ssh
+esxcli network vswitch standard set -v {{ vswitch }} -m {{ vmk_mtu }}
+{% for uplink in device.uplinks %}
+esxcli network vswitch standard uplink add -v {{ vswitch }} -u {{ uplink.interface }}  # to {{ uplink.peer }}
+{% endfor %}
+# join cluster {{ cluster }} on {{ vcenter }} (performed by the cluster_member post-check stage)

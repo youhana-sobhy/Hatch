@@ -1,0 +1,27 @@
+#!/bin/env python
+# md5sum="hatch-poap"
+# Hatch POAP bootstrap for {{ device.hostname }} (serial {{ device.serial }}).
+# Day-0 is deliberately minimal: management reachability and a call-home. The full
+# Day-1 configuration is pushed by Hatch after the device has identified itself.
+import json, urllib.request
+from cli import cli
+
+DAY0 = """
+hostname {{ device.serial | lower }}
+interface mgmt0
+  vrf member management
+  ip address {{ device.mgmt_ip }}/{{ device.mgmt_prefixlen }}
+vrf context management
+  ip route 0.0.0.0/0 {{ device.mgmt_gateway }}
+feature scp-server
+"""
+
+def main():
+    cli("configure terminal ; " + " ; ".join(l.strip() for l in DAY0.splitlines() if l.strip()))
+    body = json.dumps({"serial": "{{ ztp.serial }}", "token": "{{ ztp.token }}",
+                       "model": "{{ device.model }}", "ip": "{{ device.mgmt_ip }}"}).encode()
+    req = urllib.request.Request("{{ ztp.callhome_url }}", data=body,
+                                 headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=30)
+
+main()

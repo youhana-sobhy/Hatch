@@ -1,0 +1,16 @@
+version: 1.3.0
+status: approved
+owner: cloud-infrastructure
+description: ESXi compute host (hardened services, NTP/syslog, joins its vSphere cluster)
+required_vars: [ntp_servers, syslog_servers, aaa, snmp, mgmt_acl]
+example:
+  hostname: ams-dc1-compute-host-01
+  serial: CZ2401ABCD
+  model: PowerEdge-R760
+  site: ams-dc1
+  mgmt_ip: 10.201.10.61
+  uplinks:
+    - {interface: vmnic0, peer: ams-dc1-leaf-01, peer_interface: Ethernet1/1}
+    - {interface: vmnic1, peer: ams-dc1-leaf-02, peer_interface: Ethernet1/1}
+  vars:
+    cluster: compute-01

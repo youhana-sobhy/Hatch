@@ -1,0 +1,3 @@
+stages:
+  post_checks:
+    checks: [reachability, aaa_login, ntp_synced, interfaces_up, ha_sync]

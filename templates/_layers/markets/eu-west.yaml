@@ -1,0 +1,4 @@
+# Layer 2: market overrides for the eu-west market.
+timezone: Europe/Amsterdam
+ntp_servers: [10.201.0.123, 10.201.1.123]
+syslog_servers: [10.201.0.51, 10.201.1.51]

@@ -1,0 +1,37 @@
+rules:
+  - id: FOS-AAA-001
+    title: TACACS+ servers configured
+    severity: critical
+    must_match: '^config user tacacs\+'
+  - id: FOS-ADMIN-001
+    title: Telnet administration disabled
+    severity: high
+    must_match: 'set admin-telnet disable'
+  - id: FOS-ADMIN-002
+    title: Administrator restricted to trusted management hosts
+    severity: high
+    must_match: 'set trusthost\d+ '
+  - id: FOS-ADMIN-003
+    title: Admin idle timeout of 15 minutes or less
+    severity: medium
+    must_match: 'set admintimeout ([1-9]|1[0-5])$'
+  - id: FOS-SNMP-001
+    title: SNMPv3 with authentication and privacy
+    severity: high
+    must_match: 'set security-level auth-priv'
+  - id: FOS-SNMP-002
+    title: No SNMP communities
+    severity: high
+    must_not_match: '^config system snmp community'
+  - id: FOS-CRYPTO-001
+    title: Strong crypto enforced
+    severity: medium
+    must_match: 'set strong-crypto enable'
+  - id: FOS-NTP-001
+    title: At least two NTP sources
+    severity: medium
+    count_at_least: {regex: 'set ntp-server ', min: 2}
+  - id: FOS-HA-001
+    title: HA cluster configured
+    severity: low
+    must_match: '^config system ha'

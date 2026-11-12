@@ -1,0 +1,26 @@
+# Baseline rules that apply to every vendor.
+# Checks: must_match | must_not_match | must_match_all | count_at_least {regex, min}
+# Severities: critical | high | medium | low. The pipeline gate blocks on critical and high.
+vendors: []
+rules:
+  - id: BASE-CRED-001
+    title: No default or well-known credentials
+    severity: critical
+    must_not_match: '(?i)(password|passwd|secret|pwd|-p)\s+(0\s+)?[''"]?(admin|cisco|changeme|password|default|12345678)[''"]?\s*$'
+    remediation: Credentials must come from the secret store (device_secret / secret).
+
+  - id: BASE-BANNER-001
+    title: Legal login banner present
+    severity: high
+    must_match: '(?i)authori[sz]ed users'
+    remediation: Keep the banner from the global layer.
+
+  - id: BASE-LOG-001
+    title: Remote logging configured
+    severity: medium
+    must_match: '(?i)(logging server|syslog)'
+
+  - id: BASE-HOST-001
+    title: Hostname set from source of truth
+    severity: low
+    must_match: '(?i)host-?name'

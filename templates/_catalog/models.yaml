@@ -1,0 +1,43 @@
+# Device catalog: which models exist, which vendor driver family they belong to and which
+# roles they may be onboarded into. A model/role pair also needs a golden template.
+models:
+  N9K-C93180YC-FX3:
+    vendor: nxos
+    roles: [leaf]
+    description: 48x 25G + 6x 100G data-centre leaf
+  N9K-C9336C-FX2:
+    vendor: nxos
+    roles: [border, leaf]
+    description: 36x 100G spine / border leaf
+  FG-200F:
+    vendor: fortios
+    roles: [edge-fw]
+    description: Branch / edge next-generation firewall
+  FG-600F:
+    vendor: fortios
+    roles: [edge-fw]
+    description: Campus / large-site edge firewall
+  MX204:
+    vendor: junos
+    roles: [pe-router]
+    description: Compact 100G provider-edge router
+  ACX7100-48L:
+    vendor: junos
+    roles: [pe-router]
+    description: Metro / aggregation provider-edge router
+  PA-5410:
+    vendor: panos
+    roles: [dc-fw]
+    description: Data-centre perimeter firewall
+  PA-3410:
+    vendor: panos
+    roles: [dc-fw]
+    description: Mid-range data-centre firewall
+  PowerEdge-R760:
+    vendor: esxi
+    roles: [compute-host]
+    description: 2U dual-socket virtualisation host
+  ProLiant-DL380-Gen11:
+    vendor: esxi
+    roles: [compute-host]
+    description: 2U dual-socket virtualisation host

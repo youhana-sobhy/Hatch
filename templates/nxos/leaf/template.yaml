@@ -1,0 +1,18 @@
+version: 1.4.0
+status: approved
+owner: dc-network-platform
+description: NX-OS data-centre leaf (BGP underlay, VLANs, uplinks to spines)
+required_vars: [ntp_servers, syslog_servers, aaa, snmp, vlans, mgmt_acl]
+# Fixture used by `hatchctl templates lint` (CI test render) and template previews.
+example:
+  hostname: ams-dc1-leaf-01
+  serial: FDO2401A1BC
+  model: N9K-C93180YC-FX3
+  site: ams-dc1
+  mgmt_ip: 10.201.10.21
+  uplinks:
+    - {interface: Ethernet1/49, peer: ams-dc1-spine-01, peer_interface: Ethernet1/1}
+    - {interface: Ethernet1/50, peer: ams-dc1-spine-02, peer_interface: Ethernet1/1}
+  vars:
+    bgp_asn: 65101
+    loopback0: 10.250.1.21

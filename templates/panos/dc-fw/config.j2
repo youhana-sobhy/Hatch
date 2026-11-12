@@ -1,0 +1,38 @@
+# Hatch golden configuration :: {{ template.key }} {{ template.version }}
+# device {{ device.hostname }} ({{ device.model }}, serial {{ device.serial }})
+set deviceconfig system hostname {{ device.hostname }}
+set deviceconfig system domain {{ domain_name }}
+set deviceconfig system timezone {{ timezone }}
+set deviceconfig system ip-address {{ device.mgmt_ip }} netmask {{ device.mgmt_netmask }} default-gateway {{ device.mgmt_gateway }}
+set deviceconfig system login-banner "{{ banner | trim | replace('\n', ' ') }}"
+set deviceconfig system service disable-telnet yes disable-http yes
+{% for prefix in mgmt_acl %}
+set deviceconfig system permitted-ip {{ prefix }}
+{% endfor %}
+set deviceconfig system dns-setting servers primary {{ dns_servers[0] }} secondary {{ dns_servers[1] | default(dns_servers[0]) }}
+set deviceconfig system ntp-servers primary-ntp-server ntp-server-address {{ ntp_servers[0] }}
+set deviceconfig system ntp-servers secondary-ntp-server ntp-server-address {{ ntp_servers[1] | default(ntp_servers[0]) }}
+set mgt-config users admin password-hash "{{ device_secret('local_admin') }}"
+set mgt-config users {{ aaa.local_fallback_user }} permissions role-based superuser yes
+set mgt-config users {{ aaa.local_fallback_user }} password-hash "{{ device_secret('breakglass') }}"
+{% for server in aaa.tacacs_servers %}
+set shared server-profile tacplus HATCH-TACACS server tacacs-{{ loop.index }} address {{ server }} secret "{{ secret('aaa/tacacs_key') }}"
+{% endfor %}
+set shared authentication-profile HATCH-AAA method tacplus server-profile HATCH-TACACS
+set deviceconfig system authentication-profile HATCH-AAA
+{% for server in syslog_servers %}
+set shared log-settings syslog HATCH-SYSLOG server syslog-{{ loop.index }} server {{ server }} transport UDP port 514
+{% endfor %}
+set deviceconfig system snmp-setting snmp-system location "{{ snmp_location }}" contact "{{ snmp.contact }}"
+set deviceconfig system snmp-setting access-setting version v3 users {{ snmp.v3_user }} authpwd "{{ secret('snmp/v3_auth') }}" privpwd "{{ secret('snmp/v3_priv') }}"
+set deviceconfig high-availability enabled yes
+set deviceconfig high-availability group group-id {{ ha.group_id }} mode {{ ha.mode }}
+set deviceconfig high-availability group peer-ip {{ ha_peer_ip }}
+set deviceconfig high-availability group election-option device-priority {{ ha_priority }}
+{% for zone in zones %}
+set zone {{ zone }} network layer3 []
+{% endfor %}
+{% for uplink in device.uplinks %}
+set network interface ethernet {{ uplink.interface }} comment "to {{ uplink.peer }}"
+set network interface ethernet {{ uplink.interface }} layer3 lldp enable yes
+{% endfor %}

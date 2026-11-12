@@ -1,0 +1,10 @@
+# Hatch ESXi kickstart (PXE) for {{ device.hostname }} (serial {{ device.serial }})
+vmaccepteula
+install --firstdisk --overwritevmfs
+rootpw --iscrypted {{ device_secret('kickstart_root') }}
+network --bootproto=static --device=vmnic0 --ip={{ device.mgmt_ip }} --netmask={{ device.mgmt_netmask }} --gateway={{ device.mgmt_gateway }} --hostname={{ device.serial | lower }} --nameserver={{ dns_servers[0] }}
+reboot
+
+%firstboot --interpreter=busybox
+vim-cmd hostsvc/enable_ssh
+wget -q -O /dev/null --post-data='{"serial":"{{ ztp.serial }}","token":"{{ ztp.token }}","model":"{{ device.model }}","ip":"{{ device.mgmt_ip }}"}' --header='Content-Type: application/json' {{ ztp.callhome_url }}

@@ -1,0 +1,5 @@
+vlans:
+  - {id: 3000, name: transit-wan}
+mtu: 9216
+underlay: bgp
+external_peers: []

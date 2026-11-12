@@ -1,0 +1,33 @@
+rules:
+  - id: JUN-AAA-001
+    title: TACACS+ servers configured
+    severity: critical
+    must_match: '^set system tacplus-server '
+  - id: JUN-AAA-002
+    title: Central AAA first in authentication order
+    severity: high
+    must_match: '^set system authentication-order \[ tacplus'
+  - id: JUN-SSH-001
+    title: Root login over SSH denied
+    severity: high
+    must_match: 'ssh root-login deny'
+  - id: JUN-MGMT-001
+    title: Telnet service not enabled
+    severity: high
+    must_not_match: '^set system services telnet'
+  - id: JUN-RE-001
+    title: Routing engine protected by input filter
+    severity: high
+    must_match: '^set interfaces lo0 unit 0 family inet filter input '
+  - id: JUN-SNMP-001
+    title: SNMPv3 with privacy, no communities
+    severity: high
+    must_match_all: ['privacy-aes128', 'authentication-sha256']
+  - id: JUN-SNMP-002
+    title: No SNMP communities
+    severity: high
+    must_not_match: '^set snmp community '
+  - id: JUN-NTP-001
+    title: At least two NTP sources
+    severity: medium
+    count_at_least: {regex: '^set system ntp server ', min: 2}

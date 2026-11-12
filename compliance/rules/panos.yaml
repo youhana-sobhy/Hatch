@@ -1,0 +1,29 @@
+rules:
+  - id: PAN-AAA-001
+    title: TACACS+ server profile configured
+    severity: critical
+    must_match: 'server-profile tacplus '
+  - id: PAN-AAA-002
+    title: Management authentication uses the AAA profile
+    severity: high
+    must_match: '^set deviceconfig system authentication-profile '
+  - id: PAN-MGMT-001
+    title: Telnet and HTTP management disabled
+    severity: high
+    must_match: 'disable-telnet yes disable-http yes'
+  - id: PAN-MGMT-002
+    title: Management restricted to permitted IPs
+    severity: high
+    must_match: '^set deviceconfig system permitted-ip '
+  - id: PAN-SNMP-001
+    title: SNMPv3 only
+    severity: high
+    must_match: 'snmp-setting access-setting version v3'
+  - id: PAN-HA-001
+    title: High availability enabled
+    severity: medium
+    must_match: 'high-availability enabled yes'
+  - id: PAN-NTP-001
+    title: Primary and secondary NTP configured
+    severity: medium
+    count_at_least: {regex: 'ntp-server-address ', min: 2}

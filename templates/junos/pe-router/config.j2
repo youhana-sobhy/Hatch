@@ -1,0 +1,51 @@
+/* Hatch golden configuration :: {{ template.key }} {{ template.version }} */
+/* device {{ device.hostname }} ({{ device.model }}, serial {{ device.serial }}) */
+set system host-name {{ device.hostname }}
+set system domain-name {{ domain_name }}
+set system time-zone {{ timezone }}
+set system root-authentication plain-text-password-value "{{ device_secret('root') }}"
+set system login user {{ aaa.local_fallback_user }} class super-user authentication plain-text-password-value "{{ device_secret('breakglass') }}"
+set system login message "{{ banner | trim | replace('\n', ' ') }}"
+set system services ssh root-login deny
+set system services ssh protocol-version v2
+set system services netconf ssh
+delete system services telnet
+set system authentication-order [ tacplus password ]
+{% for server in aaa.tacacs_servers %}
+set system tacplus-server {{ server }} secret "{{ secret('aaa/tacacs_key') }}"
+{% endfor %}
+{% for server in ntp_servers %}
+set system ntp server {{ server }}
+{% endfor %}
+{% for server in dns_servers %}
+set system name-server {{ server }}
+{% endfor %}
+{% for server in syslog_servers %}
+set system syslog host {{ server }} any notice
+{% endfor %}
+set snmp location "{{ snmp_location }}"
+set snmp contact "{{ snmp.contact }}"
+set snmp v3 usm local-engine user {{ snmp.v3_user }} authentication-sha256 authentication-password "{{ secret('snmp/v3_auth') }}"
+set snmp v3 usm local-engine user {{ snmp.v3_user }} privacy-aes128 privacy-password "{{ secret('snmp/v3_priv') }}"
+{% for prefix in mgmt_acl %}
+set policy-options prefix-list HATCH-MGMT {{ prefix }}
+{% endfor %}
+set firewall family inet filter PROTECT-RE term mgmt from source-prefix-list HATCH-MGMT
+set firewall family inet filter PROTECT-RE term mgmt then accept
+set firewall family inet filter PROTECT-RE term default then discard
+set interfaces fxp0 unit 0 family inet address {{ device.mgmt_ip }}/{{ device.mgmt_prefixlen }}
+set interfaces lo0 unit 0 family inet filter input PROTECT-RE
+set interfaces lo0 unit 0 family inet address {{ loopback0 }}/32
+set interfaces lo0 unit 0 family iso address {{ isis_net }}
+set routing-options static route 0.0.0.0/0 next-hop {{ device.mgmt_gateway }}
+set routing-options router-id {{ loopback0 }}
+set routing-options autonomous-system {{ bgp_asn }}
+{% for uplink in device.uplinks %}
+set interfaces {{ uplink.interface }} description "to {{ uplink.peer }}"
+set interfaces {{ uplink.interface }} mtu {{ mtu }}
+set interfaces {{ uplink.interface }} unit 0 family inet unnumbered-address lo0.0
+set interfaces {{ uplink.interface }} unit 0 family iso
+set protocols {{ igp }} interface {{ uplink.interface }}.0 point-to-point
+{% endfor %}
+set protocols {{ igp }} interface lo0.0 passive
+set protocols lldp interface all

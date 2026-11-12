@@ -1,0 +1,19 @@
+version: 1.1.0
+status: approved
+owner: dc-network-platform
+description: NX-OS border leaf (fabric uplinks + external WAN peering)
+required_vars: [ntp_servers, syslog_servers, aaa, snmp, mgmt_acl]
+example:
+  hostname: ams-dc1-border-01
+  serial: FDO2402B9ZZ
+  model: N9K-C9336C-FX2
+  site: ams-dc1
+  mgmt_ip: 10.201.10.31
+  uplinks:
+    - {interface: Ethernet1/35, peer: ams-dc1-spine-01, peer_interface: Ethernet1/30}
+    - {interface: Ethernet1/36, peer: ams-dc1-spine-02, peer_interface: Ethernet1/30}
+  vars:
+    bgp_asn: 65190
+    loopback0: 10.250.1.31
+    external_peers:
+      - {address: 198.51.100.1, asn: 64496, description: transit-a}
